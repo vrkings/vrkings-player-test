@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>VR KINGS — For Patrons</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.6.13/hls.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Outfit:wght@300;400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#07080b;--gold:#d4a843;--gold2:#f0cc7a;--text:#e2ddd4;--muted:#52504a;--border:rgba(212,168,67,.15);}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;}
+body::before{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;opacity:.3;mix-blend-mode:screen;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='.05'/%3E%3C/svg%3E");}
+#canvas{position:fixed;inset:0;z-index:1;display:none;cursor:grab;}
+#canvas:active{cursor:grabbing;}
+#canvas.active{display:block;}
+#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:opacity .9s ease,visibility .9s;}
+#splash.hide{opacity:0;visibility:hidden;pointer-events:none;}
+.glow{position:absolute;bottom:-5%;left:50%;transform:translateX(-50%);width:min(700px,120vw);height:260px;background:radial-gradient(ellipse,rgba(212,168,67,.12) 0%,transparent 70%);pointer-events:none;}
+.splash-inner{position:relative;z-index:1;text-align:center;padding:2rem;animation:rise .9s cubic-bezier(.2,0,.1,1) both;}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.tag{display:inline-flex;align-items:center;gap:.45rem;border:1px solid var(--border);padding:.28rem .95rem;border-radius:99px;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.8rem;animation:rise .9s .08s both;}
+.tag svg{width:12px;height:12px;}
+.splash-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.6rem,8vw,5rem);font-weight:300;line-height:1.05;color:#fff;margin-bottom:.7rem;animation:rise .9s .13s both;}
+.splash-title em{font-style:italic;color:var(--gold2);}
+.splash-sub{font-size:.9rem;font-weight:300;color:var(--muted);line-height:1.75;max-width:320px;margin:0 auto 2.6rem;animation:rise .9s .18s both;}
+.hints{display:flex;align-items:center;justify-content:center;gap:2rem;margin-bottom:2.6rem;animation:rise .9s .23s both;}
+.hint{display:flex;flex-direction:column;align-items:center;gap:.4rem;font-size:.67rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
+.hico{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--gold);}
+.hico svg{width:19px;height:19px;}
+.btn-row-splash{display:flex;flex-direction:column;align-items:center;gap:.8rem;animation:rise .9s .28s both;}
+.btn-watch{display:inline-flex;align-items:center;gap:.65rem;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.85rem 2.6rem;border-radius:99px;cursor:pointer;position:relative;overflow:hidden;transition:color .3s;}
+.btn-watch::before{content:'';position:absolute;inset:0;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.4,0,.2,1);}
+.btn-watch:hover::before{transform:scaleX(1);}
+.btn-watch:hover{color:var(--bg);}
+.btn-watch svg,.btn-watch span{position:relative;z-index:1;}
+.btn-watch svg{width:17px;height:17px;}
+.btn-divider{font-size:.65rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;}
+.btn-deovr{display:inline-flex;align-items:center;gap:.65rem;background:transparent;border:1px solid rgba(212,168,67,.3);color:var(--muted);font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:400;letter-spacing:.08em;text-transform:uppercase;padding:.7rem 2.2rem;border-radius:99px;cursor:pointer;transition:border-color .2s,color .2s;text-decoration:none;}
+.btn-deovr:hover{border-color:var(--gold);color:var(--gold);}
+.btn-deovr svg{width:15px;height:15px;}
+.btn-with-desc{display:flex;flex-direction:column;align-items:center;gap:.5rem;width:100%;}
+.btn-desc{font-size:.72rem;color:var(--muted);text-align:center;line-height:1.5;}
+#nourl{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);text-align:center;padding:2rem;}
+#nourl.show{display:flex;}
+#nourl h2{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold);margin-bottom:1rem;}
+#nourl p{color:var(--muted);font-size:.9rem;line-height:1.8;max-width:400px;}
+#nourl code{display:block;margin-top:1rem;background:rgba(212,168,67,.08);border:1px solid var(--border);padding:.8rem 1.2rem;border-radius:.5rem;font-size:.8rem;color:var(--gold2);word-break:break-all;}
+/* Player error overlay — WebGL init failure, video error, load timeout, or
+   unrecoverable webglcontextlost. Shown instead of leaving the viewer
+   staring at an infinite spinner or a silent black screen. */
+#playerError{position:fixed;inset:0;z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);text-align:center;padding:2rem;}
+#playerError.show{display:flex;}
+#playerError h2{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold);margin-bottom:1rem;}
+#playerError p{color:var(--muted);font-size:.9rem;line-height:1.8;max-width:400px;margin:0 auto 1.5rem;}
+#playerError button{background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:.75rem 2.2rem;border-radius:99px;cursor:pointer;transition:background .2s,color .2s;}
+#playerError button:hover{background:var(--gold);color:var(--bg);}
+/* Transient status shown while attempting to recover from a lost WebGL context */
+#contextStatus{position:fixed;top:1.2rem;left:50%;transform:translateX(-50%);z-index:401;display:none;background:rgba(7,8,11,.9);border:1px solid var(--border);color:var(--gold2);font-size:.75rem;letter-spacing:.05em;padding:.6rem 1.2rem;border-radius:99px;}
+#contextStatus.show{display:block;}
+#loading{position:fixed;inset:0;z-index:150;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;}
+#loading.on{display:flex;}
+#loading.fade{animation:fadeOut .6s forwards;}
+@keyframes fadeOut{to{opacity:0;visibility:hidden;}}
+.ring{width:50px;height:50px;border-radius:50%;border:1.5px solid rgba(212,168,67,.12);border-top-color:var(--gold);animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltxt{font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+#buffering{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:97;pointer-events:none;display:none;flex-direction:column;align-items:center;gap:.6rem;}
+#buffering.show{display:flex;}
+.buf-ring{width:40px;height:40px;border-radius:50%;border:2px solid rgba(212,168,67,.2);border-top-color:var(--gold);animation:spin 1s linear infinite;}
+.buf-txt{font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(212,168,67,.6);}
+#topbar{position:fixed;top:0;left:0;right:0;z-index:100;padding:1rem 1.8rem;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to bottom,rgba(7,8,11,.85) 0%,transparent 100%);transform:translateY(-110%);transition:transform .5s ease .3s;pointer-events:none;}
+#topbar.show{transform:translateY(0);pointer-events:all;}
+.brand{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--gold2);letter-spacing:.06em;display:flex;align-items:center;gap:.5rem;}
+.brand svg{width:14px;height:14px;opacity:.7;}
+.backbtn{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.4rem;font-family:'Outfit',sans-serif;font-size:.73rem;letter-spacing:.07em;color:var(--muted);text-transform:uppercase;transition:color .2s;}
+.backbtn:hover{color:var(--gold);}
+.backbtn svg{width:15px;height:15px;}
+.lbadge{font-size:.63rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:.4rem;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blink 2s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+#draghint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:98;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:.6rem;transition:opacity .5s;}
+#draghint.gone{opacity:0;}
+.dhc{width:58px;height:58px;border-radius:50%;border:1px solid rgba(212,168,67,.22);display:flex;align-items:center;justify-content:center;color:rgba(212,168,67,.45);animation:pulse 2.5s ease-in-out infinite;}
+.dhc svg{width:26px;height:26px;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(212,168,67,.18)}50%{box-shadow:0 0 0 18px rgba(212,168,67,0)}}
+.dhl{font-size:.63rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(212,168,67,.38);}
+#hud{position:fixed;bottom:0;left:0;right:0;z-index:100;padding:0 1rem calc(.8rem + env(safe-area-inset-bottom)) 1rem;background:linear-gradient(to top,rgba(7,8,11,.7) 0%,rgba(7,8,11,0) 100%);transform:translateY(110%);transition:transform .5s ease .3s;pointer-events:none;}@media(orientation:landscape) and (max-width:1024px){#hud{padding-bottom:calc(.5rem + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(7,8,11,.6) 0%,rgba(7,8,11,0) 80%);}}
+#hud.show{transform:translateY(0);pointer-events:all;}
+.ptrack{width:100%;height:3px;background:rgba(255,255,255,.08);border-radius:2px;cursor:pointer;margin-bottom:.8rem;transition:height .15s,margin-top .15s;}
+.ptrack:hover{height:5px;margin-top:-2px;}
+.pfill{height:100%;border-radius:2px;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold2));pointer-events:none;transition:width .25s linear;}
+.ctrlrow{display:flex;align-items:center;gap:.35rem;flex-wrap:nowrap;}
+.cb{background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.17);color:var(--gold);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .2s,transform .15s;}
+.cb:hover{background:rgba(212,168,67,.2);transform:scale(1.08);}
+.cb svg{width:14px;height:14px;}
+.cb.active{color:var(--gold2);background:rgba(212,168,67,.25);border-color:var(--gold);}
+.tbox{font-size:.72rem;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap;}
+.tbox b{color:var(--text);font-weight:400;}
+.sp{flex:1;min-width:0;}
+.vrow{display:flex;align-items:center;gap:.3rem;}
+input#vol{-webkit-appearance:none;appearance:none;width:52px;height:2px;background:rgba(255,255,255,.14);outline:none;cursor:pointer;border-radius:2px;}
+input#vol::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--gold);cursor:pointer;}
+@media(max-width:390px){input#vol{width:36px;}.tbox{font-size:.62rem;}#zoom-wrap .zoom-val{display:none;}}
+/* Browser tips */
+.browser-tips{margin-top:1.6rem;animation:rise .9s .32s both;width:100%;max-width:340px;}
+.tips-toggle{display:flex;align-items:center;justify-content:center;gap:.4rem;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Outfit',sans-serif;width:100%;padding:.3rem 0;transition:color .2s;}
+.tips-toggle:hover{color:var(--gold);}
+.tips-toggle svg{width:12px;height:12px;transition:transform .25s;}
+.tips-toggle.open svg{transform:rotate(180deg);}
+.tips-body{overflow:hidden;max-height:0;transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:0;}
+.tips-body.open{max-height:200px;opacity:1;}
+.tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;padding:.7rem 0 .2rem;}
+.tip-row{display:flex;align-items:center;gap:.5rem;background:rgba(212,168,67,.04);border:1px solid rgba(212,168,67,.1);border-radius:8px;padding:.5rem .7rem;}
+.tip-ico{font-size:.95rem;flex-shrink:0;}
+.tip-info{display:flex;flex-direction:column;gap:.1rem;}
+.tip-device{font-size:.62rem;color:var(--muted);letter-spacing:.04em;}
+.tip-browser{font-size:.72rem;color:var(--text);font-weight:500;}
+.tip-best{color:var(--gold2);}
+.tips-note{font-size:.65rem;color:var(--muted);line-height:1.6;text-align:center;padding:.3rem 0 .1rem;opacity:.8;}
+.tips-note b{color:var(--gold);}
+
+#quality-badge{position:fixed;top:4.2rem;right:1.8rem;z-index:101;display:none;align-items:center;gap:.35rem;background:rgba(7,8,11,.75);border:1px solid rgba(212,168,67,.2);border-radius:99px;padding:.22rem .7rem;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);backdrop-filter:blur(6px);transition:opacity .3s;}
+#quality-badge.show{display:flex;}
+#quality-badge .qval{color:var(--gold2);font-weight:500;}
+/* Quality menu */
+#quality-menu{position:fixed;bottom:5.5rem;right:1.8rem;z-index:102;display:none;flex-direction:column;gap:.3rem;background:rgba(10,11,16,.92);border:1px solid rgba(212,168,67,.18);border-radius:10px;padding:.5rem;backdrop-filter:blur(10px);min-width:110px;}
+#quality-menu.show{display:flex;}
+.qopt{padding:.45rem .8rem;border-radius:7px;font-size:.78rem;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;border:none;background:none;text-align:left;font-family:'Outfit',sans-serif;width:100%;}
+.qopt:hover{background:rgba(212,168,67,.1);color:var(--text);}
+.qopt.active{color:var(--gold2);background:rgba(212,168,67,.12);}
+.qopt.auto-label{font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:.2rem .8rem .35rem;cursor:default;}
+.qopt.auto-label:hover{background:none;color:var(--muted);}
+.qopt.warn-4k{position:relative;}
+.qopt.warn-4k::after{content:'⚠ may buffer';font-size:.58rem;color:rgba(212,168,67,.5);display:block;margin-top:.1rem;}
+/* Zoom controls */
+#zoom-wrap{display:flex;align-items:center;gap:.2rem;}
+.cb-sm{background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.17);color:var(--gold);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .2s,transform .15s;font-size:1rem;line-height:1;font-weight:300;}
+.cb-sm:hover{background:rgba(212,168,67,.2);transform:scale(1.08);}
+.zoom-val{font-size:.62rem;color:var(--muted);letter-spacing:.06em;min-width:2.4rem;text-align:center;font-variant-numeric:tabular-nums;}
+/* Quality lock indicator */
+.qopt.locked{border-left:2px solid var(--gold);padding-left:.6rem;}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="nourl"><h2>No video link</h2><p>Add a video link to the URL like this:</p><code id="example-url"></code></div>
+<div id="playerError">
+  <h2>Щось пішло не так</h2>
+  <p id="playerErrorMsg">Не вдалось завантажити відео.</p>
+  <button onclick="location.reload()">Спробувати ще раз</button>
+</div>
+<div id="contextStatus">Відновлення з'єднання з відеокартою…</div>
+<div id="splash">
+  <div class="glow"></div>
+  <div class="splash-inner">
+    <div class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>VR KINGS</div>
+    <h1 class="splash-title">Step Inside<br/><em>the 360°</em></h1>
+    <p class="splash-sub">Exclusive 360° content<br/>for VR KINGS Patrons only.</p>
+    <div class="hints">
+      <div class="hint"><div class="hico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 9l-3 3 3 3M19 9l3 3-3 3M2 12h20M9 5l3-3 3 3M9 19l3 3 3-3M12 2v20"/></svg></div>Drag mouse</div>
+      <div class="hint"><div class="hico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v4M12 18v4M8 12H4M20 12h-4"/><circle cx="12" cy="12" r="3"/></svg></div>Scroll to zoom</div>
+      <div class="hint"><div class="hico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></div>Swipe on phone</div>
+      <div class="hint"><div class="hico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/></svg></div>VR mode</div>
+    </div>
+    <div class="btn-row-splash">
+      <div class="btn-with-desc">
+        <button class="btn-watch" onclick="launch()"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg><span>Watch in Browser</span></button>
+        <div class="btn-desc">💻 Computer &amp; phone — no app needed</div>
+      </div>
+      <div class="btn-divider">or</div>
+      <div class="btn-with-desc">
+        <a class="btn-deovr" id="deovr-link" href="#" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/></svg>Open in DeoVR</a>
+        <div class="btn-desc">🥽 VR headset — best quality, full immersion</div>
+        <div class="deovr-fallback" id="deovr-fallback" style="display:none;font-size:.72rem;color:var(--gold2);line-height:1.6;">
+          Не відкрилось? Встанови застосунок
+          <a href="https://deovr.com/app" target="_blank" rel="noopener" style="color:var(--gold2);text-decoration:underline;">DeoVR</a>.
+        </div>
+      </div>
+
+      <!-- Browser tips -->
+      <div class="browser-tips">
+        <button class="tips-toggle" onclick="toggleTips(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          Which browser gives best quality?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="tips-body" id="tips-body">
+          <div class="tips-grid">
+            <div class="tip-row">
+              <div class="tip-ico">💻</div>
+              <div class="tip-info">
+                <div class="tip-device">Desktop</div>
+                <div class="tip-browser tip-best">Chrome / Edge</div>
+              </div>
+            </div>
+            <div class="tip-row">
+              <div class="tip-ico">🤖</div>
+              <div class="tip-info">
+                <div class="tip-device">Android</div>
+                <div class="tip-browser tip-best">Chrome</div>
+              </div>
+            </div>
+            <div class="tip-row">
+              <div class="tip-ico">🍎</div>
+              <div class="tip-info">
+                <div class="tip-device">iPhone / iPad</div>
+                <div class="tip-browser tip-best">Safari</div>
+              </div>
+            </div>
+            <div class="tip-row">
+              <div class="tip-ico">🥽</div>
+              <div class="tip-info">
+                <div class="tip-device">VR Headset</div>
+                <div class="tip-browser tip-best">→ DeoVR</div>
+              </div>
+            </div>
+          </div>
+          <div class="tips-note">🥽 On Quest/Pico: open this link in headset browser,<br/>then tap <b>Open in DeoVR</b> for best VR experience</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="loading"><div class="ring"></div><div class="ltxt">Loading…</div></div>
+<div id="buffering"><div class="buf-ring"></div><div class="buf-txt">Loading…</div></div>
+<div id="quality-badge"><span class="qval" id="qval-txt">—</span></div>
+<div id="quality-menu"></div>
+<div id="topbar">
+  <button class="backbtn" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>VR KINGS — For Patrons</div>
+  <div class="lbadge"><span class="dot"></span>Patreon</div>
+</div>
+<div id="draghint">
+  <div class="dhc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 9l-3 3 3 3M19 9l3 3-3 3M2 12h20M9 5l3-3 3 3M9 19l3 3 3-3M12 2v20"/></svg></div>
+  <div class="dhl">Drag to look around</div>
+</div>
+<div id="hud">
+  <div class="ptrack" id="ptrack" onclick="seekTo(event)"><div class="pfill" id="pfill"></div></div>
+  <div class="ctrlrow">
+    <button class="cb" onclick="togglePlay()"><svg id="ppico" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></button>
+    <div class="tbox"><b id="tcur">0:00</b> / <span id="tdur">0:00</span></div>
+    <div class="sp"></div>
+    <div class="vrow">
+      <button class="cb" onclick="toggleMute()"><svg id="volico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></button>
+      <input type="range" id="vol" min="0" max="1" step="0.05" value="1" oninput="setVol(this.value)">
+    </div>
+    <div id="zoom-wrap">
+      <button class="cb-sm" onclick="changeZoom(1)" title="Zoom in">＋</button>
+      <div class="zoom-val" id="zoom-val">75°</div>
+      <button class="cb-sm" onclick="changeZoom(-1)" title="Zoom out">－</button>
+    </div>
+
+    <button class="cb" onclick="toggleFS()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+    <button class="cb" id="qual-btn" onclick="toggleQualityMenu()" title="Quality" style="display:none;font-size:.6rem;font-weight:600;letter-spacing:-.01em;font-family:'Outfit',sans-serif;color:var(--gold);">HD</button>
+  </div>
+</div>
+
+<script>
+// Same worker as admin.html and deo.html — signs short-lived proxy links so
+// the real Bunny Stream URL is never exposed directly to the viewer.
+const WORKER_ORIGIN = 'https://vrkings-proxy.vrkings-r.workers.dev';
+
+function getVideoURL() {
+  const params = new URLSearchParams(window.location.search);
+  let url = params.get('v');
+  if (!url) return null;
+  if (url.includes('.m3u8') || url.includes('b-cdn.net')) return url;
+  url = url.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+  url = url.replace('?dl=0', '?dl=1').replace('&dl=0', '&dl=1');
+  if (!url.includes('dl=1') && !url.includes('raw=1')) url += (url.includes('?') ? '&' : '?') + 'dl=1';
+  return url;
+}
+
+const VIDEO_URL = getVideoURL();
+const VIDEO_TYPE = new URLSearchParams(window.location.search).get('type') || '360'; // '180' or '360'
+const IS_180 = VIDEO_TYPE === '180';
+
+if (!VIDEO_URL) {
+  document.getElementById('nourl').classList.add('show');
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('example-url').textContent = window.location.origin + '/index.html?v=https://vz-XXXX.b-cdn.net/VIDEO_ID/playlist.m3u8';
+} else {
+  // DeoVR — два сценарії:
+  // 1. Окуляри відкривають плеєр у браузері → кнопка "Open in DeoVR" → deep link deovr://
+  // 2. DeoVR app → Browser → відкриває deo.json URL напряму → отримує чистий JSON
+  //
+  // FIX: was pointing at the old/retired 'deovr-api.vrkings-r.workers.dev'
+  // with a '?v=' param — the current worker.js (also used by admin.html and
+  // deo.html) lives at 'vrkings-proxy.vrkings-r.workers.dev' and expects
+  // '?url='. Aligned here so every DeoVR entry point (splash button,
+  // admin-generated links, deo.html) hits the same worker the same way.
+  const deoParams = '?url=' + encodeURIComponent(VIDEO_URL)
+    + '&type=' + (IS_180 ? 'sbs' : '360')
+    + '&title=' + encodeURIComponent(document.title || 'VR KINGS');
+
+  const deoJsonUrl = WORKER_ORIGIN + '/deovr' + deoParams;
+  const deepLink = 'deovr://' + deoJsonUrl;
+
+  const deoLinkEl = document.getElementById('deovr-link');
+  deoLinkEl.href = deepLink;
+  deoLinkEl.target = '_self';
+  deoLinkEl.onclick = function(e) {
+    e.preventDefault();
+    tryOpenDeepLink(deepLink, 'deovr-fallback');
+  };
+}
+
+/**
+ * FIX: clicking "Open in DeoVR" silently did nothing if the DeoVR app
+ * wasn't installed or the OS/browser blocked the custom `deovr://` scheme —
+ * no error, no hint what to do. Standard trick: if the page hasn't lost
+ * focus/visibility shortly after attempting the deep link, the app almost
+ * certainly didn't open, so show a fallback message with an install link.
+ */
+function tryOpenDeepLink(deepLink, fallbackElId) {
+  let leftPage = false;
+  function markLeft() { leftPage = true; }
+  document.addEventListener('visibilitychange', markLeft, { once: true });
+  window.addEventListener('blur', markLeft, { once: true });
+  window.location.href = deepLink;
+  setTimeout(() => {
+    document.removeEventListener('visibilitychange', markLeft);
+    window.removeEventListener('blur', markLeft);
+    if (!leftPage) {
+      const el = document.getElementById(fallbackElId);
+      if (el) el.style.display = 'block';
+    }
+  }, 2500);
+}
+
+
+
+let renderer, scene, camera, videoTexture, video;
+let hlsInstance = null; // FIX: moved to top scope so goBack() can reach it
+let loadTimeoutTimer = null;
+let playerErrorShown = false;
+
+/**
+ * Shows a visible, user-facing error instead of leaving the viewer staring
+ * at an infinite spinner or a silent black screen. Cancels the load-timeout
+ * watchdog (whichever failure reports first "wins" — no duplicate messages)
+ * and stops trying to render further.
+ */
+function showPlayerError(message) {
+  if (playerErrorShown) return;
+  playerErrorShown = true;
+  clearTimeout(loadTimeoutTimer);
+  document.getElementById('contextStatus').classList.remove('show');
+  document.getElementById('loading').classList.remove('on', 'fade');
+  document.getElementById('playerErrorMsg').textContent = message;
+  document.getElementById('playerError').classList.add('show');
+}
+
+// FIX: webglcontextlost — common on weak/older mobile GPUs, especially with
+// a 4K video texture being re-uploaded every frame. Previously there was no
+// handler at all, so a lost context just meant a silent black/frozen screen
+// with no recovery. Per the WebGL spec, calling preventDefault() here is
+// what tells the browser to attempt restoration; if it succeeds,
+// 'webglcontextrestored' fires and we rebuild the whole Three.js scene via
+// initThree(). If it doesn't fire (unrecoverable), the viewer just sees the
+// "restoring…" status forever, which is still strictly better than a silent
+// black screen — but it's a known gap, see PR notes.
+(function () {
+  const playerCanvas = document.getElementById('canvas');
+  playerCanvas.addEventListener('webglcontextlost', function (e) {
+    e.preventDefault();
+    console.warn('WebGL context lost — attempting recovery');
+    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+    if (video) video.pause();
+    clearTimeout(sessionRefreshTimer);
+    document.getElementById('contextStatus').classList.add('show');
+  }, false);
+
+  playerCanvas.addEventListener('webglcontextrestored', function () {
+    console.warn('WebGL context restored — reinitializing player');
+    document.getElementById('contextStatus').classList.remove('show');
+    try {
+      initThree();
+    } catch (err) {
+      console.error('Reinit after context restore failed:', err);
+      showPlayerError('Не вдалось відновити відеоплеєр після втрати з’єднання з відеокартою.');
+    }
+  }, false);
+})();
+
+let lon = -90, lat = 0;
+let isDragging = false, prevX = 0, prevY = 0;
+let hintTimer, playerActive = false;
+let currentFov = 75;
+const FOV_MIN = 30, FOV_MAX = 100, FOV_STEP = 5;
+
+function changeZoom(dir) {
+  // dir: +1 = zoom in (smaller fov), -1 = zoom out (larger fov)
+  currentFov = Math.max(FOV_MIN, Math.min(FOV_MAX, currentFov - dir * FOV_STEP));
+  if (camera) camera.fov = currentFov;
+  if (camera) camera.updateProjectionMatrix();
+  document.getElementById('zoom-val').textContent = currentFov + '°';
+}
+
+// Mouse wheel zoom
+window.addEventListener('wheel', e => {
+  if (!playerActive) return;
+  e.preventDefault();
+  changeZoom(e.deltaY < 0 ? 1 : -1);
+}, { passive: false });
+
+// Pinch-to-zoom (touch)
+let lastPinchDist = null;
+window.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+}, { passive: true });
+window.addEventListener('touchmove', e => {
+  if (e.touches.length === 2 && lastPinchDist !== null) {
+    const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    const delta = lastPinchDist - dist;
+    if (Math.abs(delta) > 8) { changeZoom(delta > 0 ? -1 : 1); lastPinchDist = dist; }
+  }
+}, { passive: true });
+window.addEventListener('touchend', () => { if (event.touches.length < 2) lastPinchDist = null; }, { passive: true });
+
+// The URL hls.js actually loads — always a short-lived Worker-signed proxy
+// link from resolveStreamUrl(). Starts null: there is no usable value before
+// the first session resolves (see resolveStreamUrl() below for why there's
+// no direct-URL fallback anymore).
+let ACTIVE_STREAM_URL = null;
+let sessionRefreshTimer = null;
+
+/**
+ * Asks the Worker for a short-lived signed proxy link to VIDEO_URL. This is
+ * the ONLY way to play the video, not a nice-to-have: Bunny Stream's hotlink
+ * protection ("Block direct url file access", Referer allowlist) rejects
+ * direct requests outright — confirmed via curl, 403 on missing, empty, or
+ * disallowed Referer, 200 only for vrkings.github.io/*.github.io/the Worker
+ * itself. A caught-and-swallowed failure here used to fall back to the raw
+ * Bunny URL "so playback still works" — it never actually could, Bunny
+ * always 403s it, and on top of that plenty of real viewers (privacy modes,
+ * some in-app browsers) don't send a Referer at all. That fallback was dead
+ * code that just delayed the real failure. If the Worker is unreachable,
+ * there is no way to play the video — callers must treat a thrown error
+ * here as fatal and show the viewer something (see showPlayerError()); the
+ * load-timeout watchdog also catches this if a caller forgets to.
+ *
+ * @returns {Promise<{proxyUrl:string, expires:number, ttl:number}>}
+ * @throws if the Worker request fails or returns a non-OK status
+ */
+async function resolveStreamUrl(rawUrl) {
+  const res = await fetch(WORKER_ORIGIN + '/session?url=' + encodeURIComponent(rawUrl), { cache: 'no-store' });
+  if (!res.ok) throw new Error('session http ' + res.status);
+  return await res.json();
+}
+
+/**
+ * The Worker's proxy link expires (~15 min by default). While someone is
+ * actively watching, quietly fetch a fresh session shortly before it
+ * expires and rebuild the Hls instance at the same quality + playback
+ * position — the viewer never notices, and long videos don't cut out.
+ */
+function scheduleSessionRefresh(ttlSeconds) {
+  clearTimeout(sessionRefreshTimer);
+  const refreshInMs = Math.max((ttlSeconds || 900) - 60, 30) * 1000; // refresh ~60s before expiry
+  sessionRefreshTimer = setTimeout(async () => {
+    if (!playerActive) return; // viewer left the player, no need to refresh
+    try {
+      const session = await resolveStreamUrl(VIDEO_URL);
+      ACTIVE_STREAM_URL = session.proxyUrl;
+      const savedLock = localStorage.getItem('vr-quality-lock');
+      const level = savedLock !== null ? parseInt(savedLock) : -1;
+      setupHls(level, video.currentTime, false);
+      scheduleSessionRefresh(session.ttl);
+    } catch (err) {
+      // The old proxy link may still have a bit of validity left (this
+      // runs ~60s before actual expiry) — retry soon rather than killing
+      // an otherwise-working session over one missed refresh. If the
+      // Worker stays down until the link truly expires, hls.js's own
+      // fatal-error handling (and the load-timeout watchdog, on the next
+      // fresh load) takes over from there.
+      console.warn('Session refresh failed, retrying shortly:', err);
+      scheduleSessionRefresh(30);
+    }
+  }, refreshInMs);
+}
+
+/**
+ * (Re)builds the hls.js instance at a specific quality level and resumes
+ * playback at `resumeAt` seconds.
+ *
+ * FIX (Safari freeze bug): switching quality via hls.js's live level
+ * APIs (currentLevel / loadLevel / nextLevel) works fine in Chrome, but
+ * in Safari it reliably freezes the video track while audio keeps
+ * playing — Safari's MediaSource is much stricter about swapping init
+ * segments between renditions than Chrome's, and this version of hls.js
+ * doesn't handle that handoff cleanly there. The only combination that's
+ * reliably smooth in both browsers is a full teardown + rebuild of the
+ * Hls instance at the desired starting level — effectively what reloading
+ * the page did to "fix" it for viewers, but done in place without losing
+ * playback position.
+ *
+ * @param {number} startLevel -1 for auto, otherwise a specific level index
+ * @param {number} resumeAt   seconds to seek to once the new instance is ready
+ * @param {boolean} isInitial true only for the very first setup (splash → play)
+ */
+function setupHls(startLevel, resumeAt, isInitial) {
+  const wasPlaying = isInitial ? true : !video.paused;
+
+  if (hlsInstance) {
+    hlsInstance.destroy();
+    hlsInstance = null;
+  }
+
+  hlsInstance = new Hls({
+    enableWorker: false,                // FIX: disable — Safari has known worker/blob quirks with hls.js
+    autoStartLoad: true,
+    maxBufferLength: 60,
+    maxMaxBufferLength: 120,
+    maxBufferSize: 120 * 1000 * 1000,
+    startLevel: startLevel,             // -1 = auto pick, or a specific rung (hint only, see below)
+    abrEwmaDefaultEstimate: 20000000,   // assume ~20Mbps at start → tries high quality first
+    capLevelToPlayerSize: false,
+  });
+
+  // Loads the Worker-proxied link (ACTIVE_STREAM_URL) rather than the raw
+  // Bunny URL — the real CDN link never appears in this request.
+  hlsInstance.loadSource(ACTIVE_STREAM_URL);
+  hlsInstance.attachMedia(video);
+
+  hlsInstance.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+    // FIX: locking the manual level has to happen HERE, not right after
+    // `new Hls()`. Before the manifest is parsed, hls.js doesn't have a
+    // `levels` list yet, so setting currentLevel earlier was silently
+    // ignored and ABR kept climbing back to 4K on its own. Now that levels
+    // exist and nothing has been buffered/played yet, locking here is both
+    // effective AND safe (no mid-playback flush, so no Safari freeze).
+    if (startLevel !== -1) {
+      hlsInstance.currentLevel = startLevel;
+    }
+    buildQualityMenu(hlsInstance);
+    document.getElementById('qual-btn').style.display = 'flex';
+    document.getElementById('quality-badge').classList.add('show');
+    if (resumeAt > 0) video.currentTime = resumeAt;
+    if (wasPlaying) video.play().catch(() => {});
+  });
+
+  hlsInstance.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
+    updateHlsQualityBadge(hlsInstance, data.level);
+  });
+
+  // FIX: without this, a fatal error (network hiccup, media decode error,
+  // or anything else) just leaves the player stuck on the loading spinner
+  // forever with no way to recover — exactly what was happening in Safari.
+  hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+    if (!data.fatal) return;
+    console.warn('hls.js fatal error:', data.type, data.details);
+    switch (data.type) {
+      case Hls.ErrorTypes.NETWORK_ERROR:
+        hlsInstance.startLoad();
+        break;
+      case Hls.ErrorTypes.MEDIA_ERROR:
+        hlsInstance.recoverMediaError();
+        break;
+      default:
+        // Unrecoverable — tear down hls.js and fall back to the browser's
+        // own HLS/video handling so the viewer gets SOMETHING instead of
+        // an infinite spinner. Still uses the proxied URL, not the raw one.
+        hlsInstance.destroy();
+        hlsInstance = null;
+        video.src = ACTIVE_STREAM_URL;
+        video.load();
+        video.play().catch(() => {});
+        break;
+    }
+  });
+}
+
+
+function initThree() {
+  const canvas = document.getElementById('canvas');
+
+  // FIX: WebGL context creation can fail outright (blocked GPU, hardware
+  // acceleration disabled, too many contexts already open) — previously
+  // this threw an uncaught exception and the viewer was left on the
+  // "Loading…" spinner forever with zero indication anything was wrong.
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  } catch (err) {
+    console.error('WebGL renderer creation failed:', err);
+    showPlayerError('Не вдалось запустити відеоплеєр на цьому пристрої.');
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(currentFov, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+  video = document.createElement('video');
+  video.crossOrigin = 'anonymous';
+  video.loop = true;
+  video.playsInline = true;
+  video.muted = true; // FIX: muted required for autoplay on iOS/Android
+  video.setAttribute('webkit-playsinline', '');
+  video.addEventListener('loadedmetadata', () => { document.getElementById('tdur').textContent = fmt(video.duration); });
+  video.addEventListener('timeupdate', updateProgress);
+  video.addEventListener('canplay', onCanPlay, { once: true });
+  // FIX: a network or decode error on the <video> element was never
+  // surfaced anywhere — the viewer just saw the loading spinner hang.
+  video.addEventListener('error', () => {
+    console.error('video element error:', video.error);
+    showPlayerError('Не вдалось завантажити відео. Перевірте з’єднання і спробуйте ще раз.');
+  });
+  video.addEventListener('waiting', () => document.getElementById('buffering').classList.add('show'));
+  video.addEventListener('playing', () => {
+    document.getElementById('buffering').classList.remove('show');
+    // Unmute after first play starts (user already interacted via launch button)
+    if (video.muted) {
+      video.muted = false;
+      document.getElementById('vol').value = 1;
+    }
+  });
+  video.addEventListener('canplaythrough', () => document.getElementById('buffering').classList.remove('show'));
+
+  if (VIDEO_URL.includes('.m3u8')) {
+    if (Hls.isSupported()) {
+      // ── hls.js — used in EVERY browser where it works (Chrome, Firefox,
+      // Edge, Android, and modern Safari too — MSE is supported there).
+      // Native HLS (Safari's built-in player) gives the browser zero
+      // visibility/control over level switching — no manual quality
+      // button, no ABR tuning. Using hls.js everywhere it's supported
+      // means every viewer gets the manual quality menu AND proper
+      // adaptive bitrate behavior.
+      const savedLockOnLoad = localStorage.getItem('vr-quality-lock');
+      const initialLevel = savedLockOnLoad !== null ? parseInt(savedLockOnLoad) : -1;
+      // Ask the Worker for a proxied link before hls.js ever touches the
+      // real Bunny URL — there is no working fallback if this fails (Bunny
+      // 403s any direct/unsigned request), so a failure here is fatal.
+      resolveStreamUrl(VIDEO_URL).then(session => {
+        ACTIVE_STREAM_URL = session.proxyUrl;
+        setupHls(initialLevel, 0, true); // start directly at saved level (or auto), autoplay via onCanPlay
+        scheduleSessionRefresh(session.ttl);
+      }).catch(err => {
+        console.error('Failed to get a playable stream link:', err);
+        showPlayerError('Не вдалось завантажити відео. Перевірте з’єднання і спробуйте ще раз.');
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // ── Native HLS fallback — only reached when hls.js genuinely can't
+      // run (very old browsers without MediaSource Extensions support).
+      // No manual quality control is possible here; the browser's own
+      // player picks quality with no override available.
+      resolveStreamUrl(VIDEO_URL).then(session => {
+        ACTIVE_STREAM_URL = session.proxyUrl;
+        video.src = ACTIVE_STREAM_URL;
+        scheduleSessionRefresh(session.ttl);
+      }).catch(err => {
+        console.error('Failed to get a playable stream link:', err);
+        showPlayerError('Не вдалось завантажити відео. Перевірте з’єднання і спробуйте ще раз.');
+      });
+      video.addEventListener('playing', updateNativeQualityBadge);
+      video.addEventListener('resize',  updateNativeQualityBadge);
+    }
+  } else {
+    // Non-HLS sources (e.g. Dropbox direct links) aren't part of the
+    // Worker's proxy scheme — play as before.
+    video.src = VIDEO_URL;
+    video.load();
+    video.addEventListener('playing', updateNativeQualityBadge);
+    video.addEventListener('resize',  updateNativeQualityBadge);
+  }
+
+  // FIX: Use RGBAFormat instead of deprecated RGBFormat (removed in newer Three.js builds)
+  videoTexture = new THREE.VideoTexture(video);
+  videoTexture.minFilter = THREE.LinearFilter;
+  videoTexture.magFilter = THREE.LinearFilter;
+  videoTexture.format = THREE.RGBAFormat;
+
+  // FIX: 180° SBS — use only left half of UV (left eye), render on hemisphere
+  // 360° — full sphere as before
+  let geo;
+  if (IS_180) {
+    geo = buildHemi180Geometry();
+  } else {
+    geo = new THREE.SphereGeometry(500, 128, 64);
+    geo.scale(-1, 1, 1);
+  }
+
+  scene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: videoTexture })));
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+  animate();
+}
+
+/**
+ * FIX: Build a 180° SBS hemisphere geometry.
+ * - Sphere covers only front 180° (phiStart=PI/2, phiLength=PI)
+ * - UV X remapped to [0, 0.5] so only left eye half of SBS texture is shown
+ * - Flipped inward (normals facing camera inside)
+ */
+function buildHemi180Geometry() {
+  // PhiStart/PhiLength = azimuth (horizontal), ThetaStart/ThetaLength = elevation
+  // Three.js SphereGeometry: phiStart=0 is +X axis, goes around Y
+  // For a front-facing dome we want phi from -PI/2 to +PI/2 (i.e. phiStart=PI/2, phiLength=PI for back hemisphere trick)
+  // Actually we use a full sphere but clamp UV to left half + restrict lon in controls
+  // Best approach: full sphere, remap UV.x to [0, 0.5]
+  const geo = new THREE.SphereGeometry(500, 128, 64);
+  geo.scale(-1, 1, 1); // invert normals
+
+  // Remap UV X: full [0,1] → left half [0, 0.5]
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) {
+    uv.setX(i, uv.getX(i) * 0.5);
+  }
+  uv.needsUpdate = true;
+  return geo;
+}
+
+function onCanPlay() {
+  clearTimeout(loadTimeoutTimer); // FIX: playback started, the load-timeout watchdog can stand down
+  const ld = document.getElementById('loading');
+  ld.classList.add('fade');
+  setTimeout(() => ld.classList.remove('on', 'fade'), 700);
+  document.getElementById('canvas').classList.add('active');
+  document.getElementById('topbar').classList.add('show');
+  document.getElementById('hud').classList.add('show');
+  playerActive = true;
+  showHint();
+  video.play().catch(() => setPPIcon(false));
+}
+
+function showHint() {
+  clearTimeout(hintTimer);
+  document.getElementById('draghint').classList.remove('gone');
+  hintTimer = setTimeout(hideHint, 4000);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (!playerActive) return;
+  lat = Math.max(-85, Math.min(85, lat));
+  const phi = THREE.MathUtils.degToRad(90 - lat);
+  const theta = THREE.MathUtils.degToRad(lon);
+  camera.lookAt(
+    500 * Math.sin(phi) * Math.cos(theta),
+    500 * Math.cos(phi),
+    500 * Math.sin(phi) * Math.sin(theta)
+  );
+  if (videoTexture && video.readyState >= video.HAVE_CURRENT_DATA) videoTexture.needsUpdate = true;
+  renderer.render(scene, camera);
+}
+
+// Drag — mouse
+window.addEventListener('mousedown', e => {
+  if (!playerActive || e.target.closest('#hud,#topbar')) return;
+  isDragging = true; prevX = e.clientX; prevY = e.clientY; hideHint();
+});
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  lon -= (e.clientX - prevX) * 0.25;
+  lat += (e.clientY - prevY) * 0.25;
+  if (IS_180) lon = Math.max(-90, Math.min(90, lon));
+  prevX = e.clientX; prevY = e.clientY;
+});
+window.addEventListener('mouseup', () => isDragging = false);
+
+// Drag — touch
+window.addEventListener('touchstart', e => {
+  if (!playerActive || e.target.closest('#hud,#topbar')) return;
+  if (e.touches.length === 1) { isDragging = true; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; hideHint(); }
+}, { passive: true });
+window.addEventListener('touchmove', e => {
+  if (!isDragging || e.touches.length !== 1) return;
+  lon -= (e.touches[0].clientX - prevX) * 0.3;
+  lat += (e.touches[0].clientY - prevY) * 0.3;
+  if (IS_180) lon = Math.max(-90, Math.min(90, lon));
+  prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+}, { passive: true });
+window.addEventListener('touchend', () => isDragging = false);
+
+
+
+function launch() {
+  playerErrorShown = false;
+  document.getElementById('splash').classList.add('hide');
+  document.getElementById('loading').classList.add('on');
+  // FIX: if nothing calls onCanPlay() within a reasonable time (WebGL
+  // stalled, HLS never resolves, Worker/CDN unreachable, etc.) the viewer
+  // was left staring at the spinner forever with no explanation. 18s covers
+  // slow mobile networks without making people wait too long for a real
+  // failure to surface.
+  clearTimeout(loadTimeoutTimer);
+  loadTimeoutTimer = setTimeout(() => {
+    if (!playerActive) showPlayerError('Не вдалось завантажити відео за розумний час.');
+  }, 18000);
+  initThree();
+}
+
+function goBack() {
+  clearTimeout(loadTimeoutTimer);
+  if (video) video.pause();
+  // FIX: destroy HLS instance to free memory
+  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+  clearTimeout(sessionRefreshTimer);
+  qualMenuOpen = false;
+  document.getElementById('quality-menu').classList.remove('show');
+  document.getElementById('quality-badge').classList.remove('show');
+  document.getElementById('qual-btn').style.display = 'none';
+  clearTimeout(hintTimer);
+  playerActive = false;
+  document.getElementById('canvas').classList.remove('active');
+  document.getElementById('topbar').classList.remove('show');
+  document.getElementById('hud').classList.remove('show');
+  document.getElementById('draghint').classList.remove('gone');
+  document.getElementById('buffering').classList.remove('show');
+  document.getElementById('splash').classList.remove('hide');
+}
+
+function togglePlay() {
+  if (!video) return;
+  if (video.paused) { video.play(); setPPIcon(true); }
+  else { video.pause(); setPPIcon(false); }
+}
+function setPPIcon(p) {
+  document.getElementById('ppico').innerHTML = p
+    ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
+    : '<polygon points="5 3 19 12 5 21"/>';
+}
+function updateProgress() {
+  if (!video || !video.duration) return;
+  document.getElementById('pfill').style.width = (video.currentTime / video.duration * 100) + '%';
+  document.getElementById('tcur').textContent = fmt(video.currentTime);
+}
+function seekTo(e) {
+  if (!video || !video.duration) return;
+  const r = document.getElementById('ptrack').getBoundingClientRect();
+  video.currentTime = ((e.clientX - r.left) / r.width) * video.duration;
+}
+function setVol(v) { if (video) { video.volume = v; video.muted = (v == 0); } }
+function toggleMute() {
+  if (!video) return;
+  video.muted = !video.muted;
+  document.getElementById('volico').innerHTML = video.muted
+    ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2"/>'
+    : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+}
+function toggleFS() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+function hideHint() { clearTimeout(hintTimer); document.getElementById('draghint').classList.add('gone'); }
+function fmt(s) { if (!s || isNaN(s)) return '0:00'; return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); }
+
+function toggleTips(btn) {
+  btn.classList.toggle('open');
+  document.getElementById('tips-body').classList.toggle('open');
+}
+
+// ── Quality management ───────────────────────────────────────────────────────
+
+function updateNativeQualityBadge() {
+  // For Safari native HLS — read actual decoded video dimensions
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  if (!w || !h) return;
+  const label = qualityLabel(h);
+  document.getElementById('qval-txt').textContent = label;
+  document.getElementById('quality-badge').classList.add('show');
+}
+
+function updateHlsQualityBadge(hls, levelIdx) {
+  const lvl = hls.levels[levelIdx];
+  if (!lvl) return;
+  const h = lvl.height || 0;
+  const kbps = Math.round((lvl.bitrate || 0) / 1000);
+  const label = qualityLabel(h);
+  document.getElementById('qval-txt').textContent = label;
+  document.getElementById('qual-btn').textContent = label;
+  // Highlight active option in menu
+  document.querySelectorAll('.qopt[data-level]').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.level) === levelIdx);
+  });
+}
+
+function qualityLabel(h) {
+  if (h >= 2160) return '4K';
+  if (h >= 1440) return '2K';
+  if (h >= 1080) return '1080p';
+  if (h >= 720)  return '720p';
+  if (h >= 480)  return '480p';
+  if (h >= 360)  return '360p';
+  return h ? h + 'p' : '—';
+}
+
+function buildQualityMenu(hls) {
+  const menu = document.getElementById('quality-menu');
+  menu.innerHTML = '';
+  // Label
+  const lbl = document.createElement('button');
+  lbl.className = 'qopt auto-label';
+  lbl.textContent = 'Quality';
+  menu.appendChild(lbl);
+  // Auto option
+  const savedLockForAuto = localStorage.getItem('vr-quality-lock');
+  const autoBtn = document.createElement('button');
+  autoBtn.className = 'qopt' + (savedLockForAuto === null ? ' active' : '');
+  autoBtn.textContent = 'Auto';
+  autoBtn.dataset.level = '-1';
+  autoBtn.onclick = () => {
+    // FIX: soft-switch (loadLevel/nextLevel) still froze video-with-audio
+    // running in Safari. Full rebuild via setupHls() is the reliable fix
+    // in both Chrome and Safari.
+    localStorage.removeItem('vr-quality-lock');
+    toggleQualityMenu();
+    setupHls(-1, video.currentTime, false);
+  };
+  menu.appendChild(autoBtn);
+  // Per-level options (highest first)
+  [...hls.levels].reverse().forEach((lvl, i) => {
+    const realIdx = hls.levels.length - 1 - i;
+    const h = lvl.height || 0;
+    const kbps = Math.round((lvl.bitrate || 0) / 1000);
+    const btn = document.createElement('button');
+    const is4k = h >= 2160;
+    btn.className = 'qopt' + (realIdx === hls.currentLevel ? ' active' : '') + (is4k ? ' warn-4k' : '');
+    btn.textContent = qualityLabel(h) + (kbps ? '  ' + kbps + 'k' : '');
+    btn.dataset.level = realIdx;
+    btn.onclick = () => {
+      // FIX: soft-switch (loadLevel/nextLevel) froze the video track while
+      // audio kept playing in Safari (even at low renditions like 720p).
+      // A full rebuild via setupHls() is the reliable fix in both browsers.
+      localStorage.setItem('vr-quality-lock', realIdx);
+      toggleQualityMenu();
+      setupHls(realIdx, video.currentTime, false);
+    };
+    menu.appendChild(btn);
+  });
+  // Mark saved quality preference as locked in the UI
+  // (the actual level is already correct — setupHls() was started at it directly,
+  // no soft-switch needed here, which is what caused the Safari freeze)
+  const saved = localStorage.getItem('vr-quality-lock');
+  if (saved !== null) {
+    const idx = parseInt(saved);
+    if (idx >= 0 && idx < hls.levels.length) {
+      updateHlsQualityBadge(hls, idx);
+      setTimeout(() => {
+        const savedBtn = menu.querySelector(`.qopt[data-level="${idx}"]`);
+        if (savedBtn) savedBtn.classList.add('locked');
+      }, 50);
+    }
+  }
+}
+
+let qualMenuOpen = false;
+function toggleQualityMenu() {
+  qualMenuOpen = !qualMenuOpen;
+  document.getElementById('quality-menu').classList.toggle('show', qualMenuOpen);
+}
+// Close menu on canvas click
+window.addEventListener('mousedown', e => {
+  if (qualMenuOpen && !e.target.closest('#quality-menu') && !e.target.closest('#qual-btn')) {
+    qualMenuOpen = false;
+    document.getElementById('quality-menu').classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>
